@@ -1,3 +1,4 @@
+//main.c (prototype)
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

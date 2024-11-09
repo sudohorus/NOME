@@ -1,3 +1,4 @@
+#makefile
 CC = gcc
 CFLAGS = -Wall -Wextra
 LDFLAGS =

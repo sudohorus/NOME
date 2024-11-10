@@ -9,6 +9,26 @@
 #include <time.h>
 #include <sys/select.h>
 
+//function to return the name of service (placeholder)
+const char* get_service_name(int port) {
+    switch(port) {
+        case 20: return "FTP Data";
+        case 21: return "FTP Control";
+        case 22: return "SSH";
+        case 23: return "Telnet";
+        case 25: return "SMTP";
+        case 53: return "DNS";
+        case 80: return "HTTP";
+        case 110: return "POP3";
+        case 443: return "HTTPS";
+        case 1433: return "MS SQL Server";
+        case 3306: return "MySQL";
+        case 8080: return "HTTP Alternate";
+        default: return "Unknown Service";
+    }
+}
+
+
 //function to parse a string of comma-separated ports and return them as an array
 int* parse_ports(char* str, int* num_ports){
     //count the number of ports
@@ -22,6 +42,10 @@ int* parse_ports(char* str, int* num_ports){
 
     //allocate memory for the ports
     int* ports = (int*)malloc(*num_ports * sizeof(int));
+    if(!ports){
+        perror("[ERROR] Memory allocation failed");
+        exit(EXIT_FAILURE);
+    }
 
     //parse the ports
     char* token = strtok(str, ",");
@@ -33,7 +57,7 @@ int* parse_ports(char* str, int* num_ports){
     return ports;
 }
 
-//function to perform a TCP Connect Scan
+//function to perform a TCP Connect Scan on the provided ports
 void scan_ports(char* ip, int* ports, int num_ports){
     struct sockaddr_in server_addr;
     int sockfd;
@@ -41,6 +65,9 @@ void scan_ports(char* ip, int* ports, int num_ports){
     fd_set write_fds;
     struct timeval timeout;
     int conn_result;
+
+    printf("PORT\tSERVICE\t\tSTATE\n");
+    printf("-----------------------------------\n");
 
     for(int i = 0; i < num_ports; i++){
         sockfd = socket(AF_INET, SOCK_STREAM, 0); //create socket
@@ -66,9 +93,9 @@ void scan_ports(char* ip, int* ports, int num_ports){
         //unknown = /
         if (result < 0 && errno != EINPROGRESS) {
             if (errno == ECONNREFUSED) {
-                printf("%d = Closed\n", ports[i]);
+                printf("%d\t%s\t\tClosed\n", ports[i], get_service_name(ports[i]));
             } else {
-                printf("%d = Unknown\n", ports[i]);
+                printf("%d\t%s\t\tUnknown\n", ports[i], get_service_name(ports[i]));
             }
             close(sockfd);
             continue;
@@ -85,15 +112,15 @@ void scan_ports(char* ip, int* ports, int num_ports){
             socklen_t len = sizeof(conn_result);
             if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &conn_result, &len) == 0) {
                 if (conn_result == 0){
-                    printf("%d = Open\n", ports[i]);
+                    printf("%d\t%s\t\tOpen\n", ports[i], get_service_name(ports[i]));
                 } else {
-                    printf("%d = Closed\n", ports[i]);
+                    printf("%d\t%s\t\tClosed\n", ports[i], get_service_name(ports[i]));
                 }
             } else {
-                printf("%d = Unknown\n", ports[i]);
+                printf("%d\t%s\t\tUnknown\n", ports[i], get_service_name(ports[i]));
             }
         } else {
-            printf("%d = Closed\n", ports[i]);
+            printf("%d\t%s\t\tClosed\n", ports[i], get_service_name(ports[i]));
         }
 
         close(sockfd);
@@ -144,15 +171,14 @@ int main(int argc, char *argv[]){
             printf("%d", ports[i]);
             if(i < num_ports -1) printf(", ");
         }
-        printf("\n");
+        printf("\n\n");
 
         //measure execution time
         clock_t start_time = clock();
-        //scan specified ports
         scan_ports(ip, ports, num_ports);
         clock_t end_time = clock();
         double time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-        printf("Scanned in: %.5fms\n", time_spent);
+        printf("\nScanned in: %.5fms\n", time_spent);
     }
 
     if(top_ports > 0){

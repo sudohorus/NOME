@@ -1,16 +1,13 @@
-//main.c (prototype)
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <sys/time.h>
-#include <sys/select.h>
 #include <fcntl.h>
 #include <errno.h>
-
-#define TIMEOUT 1;
+#include <time.h>
+#include <sys/select.h>
 
 //function to parse a string of comma-separated ports and return them as an array
 int* parse_ports(char* str, int* num_ports){
@@ -41,8 +38,9 @@ void scan_ports(char* ip, int* ports, int num_ports){
     struct sockaddr_in server_addr;
     int sockfd;
     int result;
+    fd_set write_fds;
     struct timeval timeout;
-    fd_set readfds;
+    int conn_result;
 
     for(int i = 0; i < num_ports; i++){
         sockfd = socket(AF_INET, SOCK_STREAM, 0); //create socket
@@ -56,33 +54,46 @@ void scan_ports(char* ip, int* ports, int num_ports){
         server_addr.sin_port = htons(ports[i]);
         server_addr.sin_addr.s_addr = inet_addr(ip);
 
-        //timeout value
-        timeout.tv_sec = TIMEOUT;
-        timeout.tv_usec = 0;
-
         //set the socket to non-blocking mode
-        fcntl(sockfd, F_SETFL, O_NONBLOCK);
+        int flags = fcntl(sockfd, F_GETFL, 0);
+        fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 
         //attempt to connect to the server
         result = connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr));
-        
-        //check if connection is in progress
-        if(result < 0 && errno != EINPROGRESS){
-            printf("Port %d = Closed\n", ports[i]);
+
+        //open = syn/ack
+        //closed = RST
+        //unknown = /
+        if (result < 0 && errno != EINPROGRESS) {
+            if (errno == ECONNREFUSED) {
+                printf("%d = Closed\n", ports[i]);
+            } else {
+                printf("%d = Unknown\n", ports[i]);
+            }
             close(sockfd);
             continue;
         }
 
-        //use select to implement the timeout
-        FD_ZERO(&readfds);
-        FD_SET(sockfd, &readfds);
-        
-        result = select(sockfd +1, NULL, &readfds, NULL, &timeout);
+        FD_ZERO(&write_fds);
+        FD_SET(sockfd, &write_fds);
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 1000000;
 
-        if(result == 1){
-            printf("Port %d = Open\n", ports[i]);
-        }else{
-            printf("Port %d = Closed\n", ports[i]);
+        result = select(sockfd + 1, NULL, &write_fds, NULL, &timeout);
+
+        if (result > 0) {
+            socklen_t len = sizeof(conn_result);
+            if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &conn_result, &len) == 0) {
+                if (conn_result == 0){
+                    printf("%d = Open\n", ports[i]);
+                } else {
+                    printf("%d = Closed\n", ports[i]);
+                }
+            } else {
+                printf("%d = Unknown\n", ports[i]);
+            }
+        } else {
+            printf("%d = Closed\n", ports[i]);
         }
 
         close(sockfd);
@@ -135,8 +146,13 @@ int main(int argc, char *argv[]){
         }
         printf("\n");
 
+        //measure execution time
+        clock_t start_time = clock();
         //scan specified ports
         scan_ports(ip, ports, num_ports);
+        clock_t end_time = clock();
+        double time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+        printf("Scanned in: %.5fms\n", time_spent);
     }
 
     if(top_ports > 0){

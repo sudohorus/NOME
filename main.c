@@ -13,52 +13,52 @@
 const char* get_service_name(int port) {
 switch(port) {
     case 9: return "Discard Protocol";
-    case 17: return "Quote of the Day (QOTD)";
+    case 17: return "QOTD";
     case 19: return "Chargen";
-    case 21: return "FTP (File Transfer Protocol)";
-    case 22: return "SSH (Secure Shell)";
+    case 21: return "FTP";
+    case 22: return "SSH";
     case 23: return "Telnet";
-    case 25: return "SMTP (Simple Mail Transfer Protocol)";
-    case 53: return "DNS (Domain Name System)";
-    case 67: return "DHCP (Dynamic Host Configuration Protocol)";
-    case 68: return "DHCP (Dynamic Host Configuration Protocol) Client";
-    case 69: return "TFTP (Trivial File Transfer Protocol)";
-    case 80: return "HTTP (Hypertext Transfer Protocol)";
+    case 25: return "SMTP";
+    case 53: return "DNS";
+    case 67: return "DHCP";
+    case 68: return "DHCPC";
+    case 69: return "TFTP";
+    case 80: return "HTTP";
     case 88: return "Kerberos";
-    case 110: return "POP3 (Post Office Protocol v3)";
-    case 123: return "NTP (Network Time Protocol)";
-    case 143: return "IMAP (Internet Message Access Protocol)";
-    case 161: return "SNMP (Simple Network Management Protocol)";
-    case 162: return "SNMP Trap";
-    case 179: return "BGP (Border Gateway Protocol)";
-    case 443: return "HTTPS (Hypertext Transfer Protocol Secure)";
-    case 465: return "SMTPS (SMTP Secure)";
+    case 110: return "POP3";
+    case 123: return "NTP";
+    case 143: return "IMAP";
+    case 161: return "SNMP";
+    case 162: return "SNMPTrap";
+    case 179: return "BGP";
+    case 443: return "HTTPS";
+    case 465: return "SMTPS";
     case 514: return "Syslog";
-    case 636: return "LDAPS (Secure LDAP)";
-    case 993: return "IMAPS (Secure IMAP)";
-    case 995: return "POP3S (Secure POP3)";
-    case 1080: return "SOCKS Proxy";
+    case 636: return "LDAPS";
+    case 993: return "IMAPS";
+    case 995: return "POP3S";
+    case 1080: return "SOCKS";
     case 1194: return "OpenVPN";
-    case 1433: return "MS SQL Server";
-    case 1434: return "MS SQL Server (UDP)";
-    case 1723: return "PPTP (Point-to-Point Tunneling Protocol)";
-    case 3306: return "MySQL (Database)";
-    case 3389: return "RDP (Remote Desktop Protocol)";
-    case 5432: return "PostgreSQL (Database)";
-    case 5900: return "VNC (Virtual Network Computing)";
-    case 6379: return "Redis (NoSQL Database)";
-    case 6660: return "IRC (Internet Relay Chat)";
-    case 8080: return "HTTP Alternate (HTTP Proxy)";
-    case 8443: return "HTTPS Alternate (Secure Web)";
-    case 8888: return "Web Proxy (HTTP Alternate)";
-    case 27017: return "MongoDB (Database)";
-    case 5000: return "UPnP (Universal Plug and Play)";
-    case 5060: return "SIP (Session Initiation Protocol)";
-    case 5222: return "XMPP (Extensible Messaging and Presence Protocol)";
-    case 5901: return "VNC (Virtual Network Computing - Alt)";
-    case 27015: return "Steam (Gaming Platform)";
-    case 1109: return "IMAP (Alternate Port)";
-    case 5859: return "Apple Push Notification Service";
+    case 1433: return "MSSQLServer";
+    case 1434: return "MSSQLServer (UDP)";
+    case 1723: return "PPTP";
+    case 3306: return "MySQL";
+    case 3389: return "RDP";
+    case 5432: return "PostgreSQL";
+    case 5900: return "VNC";
+    case 6379: return "Redis";
+    case 6660: return "IRC";
+    case 8080: return "HTTP-Proxy";
+    case 8443: return "HTTPS-Alt";
+    case 8888: return "Web-Proxy";
+    case 27017: return "MongoDB";
+    case 5000: return "UPnP";
+    case 5060: return "SIP";
+    case 5222: return "XMPP";
+    case 5901: return "VNC";
+    case 27015: return "Steam";
+    case 1109: return "IMAP";
+    case 5859: return "Apple-Push";
 
     default: return "Unknown Service";
     }
@@ -102,8 +102,8 @@ void scan_ports(char* ip, int* ports, int num_ports){
     struct timeval timeout;
     int conn_result;
 
-    printf("PORT\tSERVICE\t\tSTATE\n");
-    printf("-----------------------------------\n");
+    printf("PORT\tSERVICE\t\t\t\tSTATE\n");
+    printf("----------------------------------------------------\n");
 
     for(int i = 0; i < num_ports; i++){
         sockfd = socket(AF_INET, SOCK_STREAM, 0); //create socket
@@ -129,9 +129,9 @@ void scan_ports(char* ip, int* ports, int num_ports){
         //unknown = /
         if (result < 0 && errno != EINPROGRESS) {
             if (errno == ECONNREFUSED) {
-                printf("%d\t%s\t\tClosed\n", ports[i], get_service_name(ports[i]));
+                printf("%d\t%s\t\t\t\tClosed\n", ports[i], get_service_name(ports[i]));
             } else {
-                printf("%d\t%s\t\tUnknown\n", ports[i], get_service_name(ports[i]));
+                printf("%d\t%s\t\t\t\tUnknown\n", ports[i], get_service_name(ports[i]));
             }
             close(sockfd);
             continue;
@@ -148,15 +148,15 @@ void scan_ports(char* ip, int* ports, int num_ports){
             socklen_t len = sizeof(conn_result);
             if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &conn_result, &len) == 0) {
                 if (conn_result == 0){
-                    printf("%d\t%s\t\tOpen\n", ports[i], get_service_name(ports[i]));
+                    printf("%d\t%s\t\t\t\tOpen\n", ports[i], get_service_name(ports[i]));
                 } else {
-                    printf("%d\t%s\t\tClosed\n", ports[i], get_service_name(ports[i]));
+                    printf("%d\t%s\t\t\t\tClosed\n", ports[i], get_service_name(ports[i]));
                 }
             } else {
-                printf("%d\t%s\t\tUnknown\n", ports[i], get_service_name(ports[i]));
+                printf("%d\t%s\t\t\t\tUnknown\n", ports[i], get_service_name(ports[i]));
             }
         } else {
-            printf("%d\t%s\t\tClosed\n", ports[i], get_service_name(ports[i]));
+            printf("%d\t%s\t\t\t\tClosed\n", ports[i], get_service_name(ports[i]));
         }
 
         close(sockfd);

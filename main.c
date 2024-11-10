@@ -11,89 +11,56 @@
 
 //function to return the name of service (placeholder)
 const char* get_service_name(int port) {
-    switch(port) {
-        case 20: return "FTP Data";
-        case 21: return "FTP Control";
-        case 22: return "SSH";
-        case 23: return "Telnet";
-        case 25: return "SMTP";
-        case 53: return "DNS";
-        case 80: return "HTTP";
-        case 110: return "POP3";
-        case 443: return "HTTPS";
-        case 1433: return "MS SQL Server";
-        case 3306: return "MySQL";
-        case 8080: return "HTTP Alternate";
-        case 69: return "TFTP";
-        case 161: return "SNMP";
-        case 162: return "SNMP Trap";
-        case 445: return "Microsoft-DS";
-        case 3389: return "RDP (Remote Desktop Protocol)";
-        case 5432: return "PostgreSQL";
-        case 6379: return "Redis";
-        case 993: return "IMAPS";
-        case 995: return "POP3S";
-        case 465: return "SMTPS (SMTP Secure)";
-        case 1521: return "Oracle DB";
-        case 27017: return "MongoDB";
-        case 5000: return "UPnP (Universal Plug and Play)";
-        case 5060: return "SIP (Session Initiation Protocol)";
-        case 8888: return "HTTP Alternate (Web Proxy)";
-        case 9100: return "Printer (JetDirect)";
-        case 9898: return "XMPP (Jabber)";
-        case 27015: return "Steam";
-        case 500: return "ISAKMP (IPSec)";
-        case 514: return "Syslog";
-        case 5140: return "TeamSpeak";
-        case 993: return "IMAPS (Secure IMAP)";
-        case 995: return "POP3S (Secure POP3)";
-        case 389: return "LDAP (Lightweight Directory Access Protocol)";
-        case 636: return "LDAPS (Secure LDAP)";
-        case 443: return "HTTPS (HTTP Secure)";
-        case 25: return "SMTP (Simple Mail Transfer Protocol)";
-        case 110: return "POP3 (Post Office Protocol)";
-        case 1812: return "RADIUS Authentication";
-        case 1813: return "RADIUS Accounting";
-        case 5000: return "UPnP (Universal Plug and Play)";
-        case 5060: return "SIP (Session Initiation Protocol)";
-        case 6660: return "IRC (Internet Relay Chat)";
-        case 6661: return "IRC (Internet Relay Chat)";
-        case 6662: return "IRC (Internet Relay Chat)";
-        case 6663: return "IRC (Internet Relay Chat)";
-        case 6664: return "IRC (Internet Relay Chat)";
-        case 6665: return "IRC (Internet Relay Chat)";
-        case 6666: return "IRC (Internet Relay Chat)";
-        case 6670: return "IRC (Internet Relay Chat)";
-        case 2222: return "DirectAdmin";
-        case 3306: return "MySQL";
-        case 5432: return "PostgreSQL";
-        case 27017: return "MongoDB";
-        case 5900: return "VNC (Virtual Network Computing)";
-        case 1080: return "SOCKS Proxy";
-        case 4444: return "Blaster Worm";
-        case 1723: return "PPTP (Point-to-Point Tunneling Protocol)";
-        case 636: return "LDAPS";
-        case 2200: return "X Window System";
-        case 8080: return "HTTP Alternate";
-        case 11211: return "Memcached";
-        case 8081: return "HTTP Alternate";
-        case 5672: return "AMQP (Advanced Message Queuing Protocol)";
-        case 10000: return "Webmin";
-        case 1194: return "OpenVPN";
-        case 8888: return "Web Proxy";
-        case 9000: return "SonarQube";
-        case 5671: return "AMQPS (AMQP Secure)";
-        case 4000: return "ICQ (Instant Messaging)";
-        case 3333: return "Direct Connect";
-        case 8000: return "Common HTTP Alternate";
-        case 15672: return "RabbitMQ HTTP API";
-        case 7000: return "L2TP (Layer 2 Tunneling Protocol)";
-    
-        if (port >= 49152 && port <= 65535) {
-            return "Dynamic/Private Port";
-        }
-    
-        default: return "Unknown Service";
+switch(port) {
+    case 9: return "Discard Protocol";
+    case 17: return "Quote of the Day (QOTD)";
+    case 19: return "Chargen";
+    case 21: return "FTP (File Transfer Protocol)";
+    case 22: return "SSH (Secure Shell)";
+    case 23: return "Telnet";
+    case 25: return "SMTP (Simple Mail Transfer Protocol)";
+    case 53: return "DNS (Domain Name System)";
+    case 67: return "DHCP (Dynamic Host Configuration Protocol)";
+    case 68: return "DHCP (Dynamic Host Configuration Protocol) Client";
+    case 69: return "TFTP (Trivial File Transfer Protocol)";
+    case 80: return "HTTP (Hypertext Transfer Protocol)";
+    case 88: return "Kerberos";
+    case 110: return "POP3 (Post Office Protocol v3)";
+    case 123: return "NTP (Network Time Protocol)";
+    case 143: return "IMAP (Internet Message Access Protocol)";
+    case 161: return "SNMP (Simple Network Management Protocol)";
+    case 162: return "SNMP Trap";
+    case 179: return "BGP (Border Gateway Protocol)";
+    case 443: return "HTTPS (Hypertext Transfer Protocol Secure)";
+    case 465: return "SMTPS (SMTP Secure)";
+    case 514: return "Syslog";
+    case 636: return "LDAPS (Secure LDAP)";
+    case 993: return "IMAPS (Secure IMAP)";
+    case 995: return "POP3S (Secure POP3)";
+    case 1080: return "SOCKS Proxy";
+    case 1194: return "OpenVPN";
+    case 1433: return "MS SQL Server";
+    case 1434: return "MS SQL Server (UDP)";
+    case 1723: return "PPTP (Point-to-Point Tunneling Protocol)";
+    case 3306: return "MySQL (Database)";
+    case 3389: return "RDP (Remote Desktop Protocol)";
+    case 5432: return "PostgreSQL (Database)";
+    case 5900: return "VNC (Virtual Network Computing)";
+    case 6379: return "Redis (NoSQL Database)";
+    case 6660: return "IRC (Internet Relay Chat)";
+    case 8080: return "HTTP Alternate (HTTP Proxy)";
+    case 8443: return "HTTPS Alternate (Secure Web)";
+    case 8888: return "Web Proxy (HTTP Alternate)";
+    case 27017: return "MongoDB (Database)";
+    case 5000: return "UPnP (Universal Plug and Play)";
+    case 5060: return "SIP (Session Initiation Protocol)";
+    case 5222: return "XMPP (Extensible Messaging and Presence Protocol)";
+    case 5901: return "VNC (Virtual Network Computing - Alt)";
+    case 27015: return "Steam (Gaming Platform)";
+    case 1109: return "IMAP (Alternate Port)";
+    case 5859: return "Apple Push Notification Service";
+
+    default: return "Unknown Service";
     }
 }
 

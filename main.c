@@ -102,8 +102,8 @@ void scan_ports(char* ip, int* ports, int num_ports){
     struct timeval timeout;
     int conn_result;
 
-    printf("PORT\tSERVICE\t\t\t\tSTATE\n");
-    printf("----------------------------------------------------\n");
+    printf("PORT\tSERVICE\t\t    STATE\n");
+    printf("------------------------------------\n");
 
     for(int i = 0; i < num_ports; i++){
         sockfd = socket(AF_INET, SOCK_STREAM, 0); //create socket
@@ -129,9 +129,9 @@ void scan_ports(char* ip, int* ports, int num_ports){
         //unknown = /
         if (result < 0 && errno != EINPROGRESS) {
             if (errno == ECONNREFUSED) {
-                printf("%d\t%s\t\t\t\tClosed\n", ports[i], get_service_name(ports[i]));
+                printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Closed");
             } else {
-                printf("%d\t%s\t\t\t\tUnknown\n", ports[i], get_service_name(ports[i]));
+                printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Unknown");
             }
             close(sockfd);
             continue;
@@ -148,15 +148,15 @@ void scan_ports(char* ip, int* ports, int num_ports){
             socklen_t len = sizeof(conn_result);
             if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &conn_result, &len) == 0) {
                 if (conn_result == 0){
-                    printf("%d\t%s\t\t\t\tOpen\n", ports[i], get_service_name(ports[i]));
+                    printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Open");
                 } else {
-                    printf("%d\t%s\t\t\t\tClosed\n", ports[i], get_service_name(ports[i]));
+                    printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Closed");
                 }
             } else {
-                printf("%d\t%s\t\t\t\tUnknown\n", ports[i], get_service_name(ports[i]));
+                printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Unknown");
             }
         } else {
-            printf("%d\t%s\t\t\t\tClosed\n", ports[i], get_service_name(ports[i]));
+            printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Closed");
         }
 
         close(sockfd);

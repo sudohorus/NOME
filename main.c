@@ -8,6 +8,8 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/select.h>
+#include <netinet/tcp.h>
+#include <netinet/ip.h>
 
 //function to return the name of service (placeholder)
 const char* get_service_name(int port) {
@@ -163,12 +165,51 @@ void scan_ports(char* ip, int* ports, int num_ports){
     }
 }
 
+///function for the SYN Scan
+void syn_scan(char *ip, int* ports, int num_ports){
+    struct sockaddr_in target;
+    int sockfd;
+
+    printf("PORT\tSERVICE\t\t    STATE\n");
+    printf("------------------------------------\n");
+
+    for (int i = 0; i < num_ports; i++){
+        sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+        if(sockfd < 0){
+            perror("[ERROR] Failed to create raw socket");
+            return;
+        }
+
+        target.sin_family = AF_INET;
+        target.sin_port = htons(ports[i]);
+        target.sin_addr.s_addr = inet_addr(ip);
+
+        struct tcphdr tcp_header;
+        memset(&tcp_header, 0, sizeof(tcp_header));
+
+        tcp_header.source = htons(12345);
+        tcp_header.dest = htons(ports[i]);
+        tcp_header.seq = htonl(rand());
+        tcp_header.doff = 5;
+        tcp_header.syn = 1;
+        tcp_header.window = htons(1024);
+
+        //sending SYN packets
+        if(sendto(sockfd, &tcp_header, sizeof(tcp_header), 0, (struct sockaddr*)&target, sizeof(target)) < 0){
+            perror("[ERROR] Failed to send SYN packet");
+        }else{
+            printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Open/Filtered (SYN Sent)");
+        }
+        close(sockfd);
+    }
+}
+
 //main function
 int main(int argc, char *argv[]){
     //check if the correct number (minimum) of arguments if provided
     if (argc < 3){
         fprintf(stderr, "[ERROR] Incorrect Usage. Example: \n");
-        fprintf(stderr, "./nome -h <IP> -p <ports>\n");
+        fprintf(stderr, "./nome -h <IP> -p <ports> [--method]\n");
         return EXIT_FAILURE;
     }
 
@@ -176,6 +217,7 @@ int main(int argc, char *argv[]){
     int top_ports = 0;
     int* ports = NULL;
     int num_ports = 0;
+    int use_syn_scan = 0;
 
     //process the arguments
     for(int i = 1; i < argc; i++){
@@ -185,17 +227,17 @@ int main(int argc, char *argv[]){
             ports = parse_ports(argv[++i], &num_ports); //parse the ports passed after -p
         }else if(strcmp(argv[i], "--top") == 0){
             top_ports = atoi(argv[++i]); //assign the number of top ports
+        }else if(strcmp(argv[i], "--syn") == 0){
+            use_syn_scan = 1; //use SYN Scan
         }
     }
 
-    //validate IP
-    if(ip == NULL){
+    if(ip == NULL) {
         fprintf(stderr, "[ERROR] Target IP not specified\n");
         return EXIT_FAILURE;
     }
 
-    //check if both --top and -p are provided together
-    if(ports != NULL && top_ports > 0){
+    if(ports != NULL && top_ports > 0) {
         fprintf(stderr, "[ERROR] You cannot use both -p and --top at the same time.\n");
         return EXIT_FAILURE;
     }
@@ -203,19 +245,26 @@ int main(int argc, char *argv[]){
     printf("Scanning IP: %s\n", ip);
     if (ports != NULL) {
         printf("Scanning the ports: ");
-        for(int i = 0; i < num_ports; i++){
+        for(int i = 0; i < num_ports; i++) {
             printf("%d", ports[i]);
-            if(i < num_ports -1) printf(", ");
+            if(i < num_ports - 1) printf(", ");
         }
         printf("\n\n");
 
-        //measure execution time
+        // Medindo tempo de execução
         clock_t start_time = clock();
-        scan_ports(ip, ports, num_ports);
+
+        if (use_syn_scan) {
+            syn_scan(ip, ports, num_ports); //use syn scan
+        } else {
+            scan_ports(ip, ports, num_ports); //tcp connect
+        }
+
         clock_t end_time = clock();
         double time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
         printf("\nScanned in: %.5fms\n", time_spent);
     }
+
 
     if(top_ports > 0){
         printf("Scanning the top %d most common ports...\n", top_ports);

@@ -11,6 +11,12 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 
+
+#define RED "\x1b[31m"
+#define YELLOW "\x1b[33m"
+#define GREEN   "\x1b[32m"
+#define RESET   "\x1b[0m"
+
 //function to return the name of service (placeholder)
 const char* get_service_name(int port) {
 switch(port) {
@@ -81,7 +87,7 @@ int* parse_ports(char* str, int* num_ports){
     //allocate memory for the ports
     int* ports = (int*)malloc(*num_ports * sizeof(int));
     if(!ports){
-        perror("[ERROR] Memory allocation failed");
+        perror(RED "[ERROR] Memory allocation failed" RESET);
         exit(EXIT_FAILURE);
     }
 
@@ -104,13 +110,14 @@ void scan_ports(char* ip, int* ports, int num_ports){
     struct timeval timeout;
     int conn_result;
 
+    printf(GREEN "Running TCP Connect Scan\n" RESET);
     printf("PORT\tSERVICE\t\t    STATE\n");
     printf("------------------------------------\n");
 
     for(int i = 0; i < num_ports; i++){
         sockfd = socket(AF_INET, SOCK_STREAM, 0); //create socket
         if(sockfd == -1){
-            perror("[ERROR] Socket creation failed");
+            perror(RED "[ERROR] Socket creation failed" RESET);
             return;
         }
         
@@ -130,11 +137,7 @@ void scan_ports(char* ip, int* ports, int num_ports){
         //closed = RST
         //unknown = /
         if (result < 0 && errno != EINPROGRESS) {
-            if (errno == ECONNREFUSED) {
-                printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Closed");
-            } else {
-                printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Unknown");
-            }
+            printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Closed");
             close(sockfd);
             continue;
         }
@@ -148,14 +151,11 @@ void scan_ports(char* ip, int* ports, int num_ports){
 
         if (result > 0) {
             socklen_t len = sizeof(conn_result);
-            if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &conn_result, &len) == 0) {
-                if (conn_result == 0){
-                    printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Open");
-                } else {
-                    printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Closed");
-                }
-            } else {
-                printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Unknown");
+            getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &conn_result, &len);
+            if(conn_result == 0){
+                printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Open");
+            }else{
+                printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Closed");
             }
         } else {
             printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Closed");
@@ -169,14 +169,17 @@ void scan_ports(char* ip, int* ports, int num_ports){
 void syn_scan(char *ip, int* ports, int num_ports){
     struct sockaddr_in target;
     int sockfd;
+    char buffer[4096];
+    struct tcphdr tcp_header;
 
+    printf(YELLOW "[WARNING] Running beta function SYN Scan\n\n" RESET);
     printf("PORT\tSERVICE\t\t    STATE\n");
     printf("------------------------------------\n");
 
     for (int i = 0; i < num_ports; i++){
         sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
         if(sockfd < 0){
-            perror("[ERROR] Failed to create raw socket");
+            perror(RED "[ERROR] Failed to create raw socket" RESET);
             return;
         }
 
@@ -184,9 +187,7 @@ void syn_scan(char *ip, int* ports, int num_ports){
         target.sin_port = htons(ports[i]);
         target.sin_addr.s_addr = inet_addr(ip);
 
-        struct tcphdr tcp_header;
         memset(&tcp_header, 0, sizeof(tcp_header));
-
         tcp_header.source = htons(12345);
         tcp_header.dest = htons(ports[i]);
         tcp_header.seq = htonl(rand());
@@ -196,9 +197,29 @@ void syn_scan(char *ip, int* ports, int num_ports){
 
         //sending SYN packets
         if(sendto(sockfd, &tcp_header, sizeof(tcp_header), 0, (struct sockaddr*)&target, sizeof(target)) < 0){
-            perror("[ERROR] Failed to send SYN packet");
+            perror(RED "[ERROR] Failed to send SYN packet" RESET);
         }else{
-            printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Open/Filtered (SYN Sent)");
+            fd_set read_fds;
+            struct timeval timeout;
+            FD_ZERO(&read_fds);
+            FD_SET(sockfd, &read_fds);
+            timeout.tv_sec = 00;
+            timeout.tv_usec = 1000000;
+
+            if(select(sockfd + 1, &read_fds, NULL, NULL, &timeout) > 0){
+                if(recvfrom(sockfd, buffer, sizeof(buffer), 0, NULL, NULL) > 0){
+                    struct tcphdr* response = (struct tcphdr*)(buffer + sizeof(struct iphdr));
+                    if(response->syn == 1 && response->ack == 1){
+                        printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Open");
+                    }else if(response->rst == 1){
+                        printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Closed");
+                    }else{
+                        printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Unknown");
+                    }
+                }
+            }else{
+                printf("%-8d%-20s%-10s\n", ports[i], get_service_name(ports[i]), "Filtered");
+            }  
         }
         close(sockfd);
     }
@@ -208,7 +229,7 @@ void syn_scan(char *ip, int* ports, int num_ports){
 int main(int argc, char *argv[]){
     //check if the correct number (minimum) of arguments if provided
     if (argc < 3){
-        fprintf(stderr, "[ERROR] Incorrect Usage. Example: \n");
+        fprintf(stderr, RED "[ERROR] Incorrect Usage. Example: \n" RESET);
         fprintf(stderr, "./nome -h <IP> -p <ports> [--method]\n");
         return EXIT_FAILURE;
     }
@@ -233,12 +254,12 @@ int main(int argc, char *argv[]){
     }
 
     if(ip == NULL) {
-        fprintf(stderr, "[ERROR] Target IP not specified\n");
+        fprintf(stderr, RED "[ERROR] Target IP not specified\n" RESET);
         return EXIT_FAILURE;
     }
 
     if(ports != NULL && top_ports > 0) {
-        fprintf(stderr, "[ERROR] You cannot use both -p and --top at the same time.\n");
+        fprintf(stderr, RED "[ERROR] You cannot use both -p and --top at the same time.\n" RESET);
         return EXIT_FAILURE;
     }
 
@@ -262,7 +283,7 @@ int main(int argc, char *argv[]){
 
         clock_t end_time = clock();
         double time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-        printf("\nScanned in: %.5fms\n", time_spent);
+        printf(GREEN "\nScanned in: %.5fms\n" RESET, time_spent);
     }
 
 
